@@ -45,14 +45,19 @@ async def ask(update: Update, context):
     await update.message.reply_text("🔍 Шукаю інформацію...")
 
     try:
-        query_embedding = get_embedding(question)
-        chunks = match_chunks(query_embedding, match_count=5, match_threshold=0.7)
+        # Try RAG search if embeddings are available
+        chunks = []
+        try:
+            query_embedding = get_embedding(question)
+            chunks = match_chunks(query_embedding, match_count=5, match_threshold=0.7)
+        except Exception as embed_err:
+            print(f"[WARN] Embedding failed, using LLM directly: {embed_err}")
 
         ctx = "\n\n---\n\n".join(r["content"] for r in chunks)
         if ctx:
             user_message = f"Контекст:\n{ctx}\n\nПитання: {question}"
         else:
-            user_message = f"Контексту не знайдено. Питання: {question}"
+            user_message = f"Питання: {question}"
 
         provider = get_provider()
         answer = provider.synthesize(system_prompt=SYSTEM_PROMPT, user_message=user_message)
@@ -105,10 +110,14 @@ async def suggest_cmd(update: Update, context):
         )
 
         goals = json.loads(profile["goals"]) if isinstance(profile["goals"], str) else profile.get("goals", [])
-        query = f"інвестиції {' '.join(goals)}"
-        query_embedding = get_embedding(query)
-        chunks = match_chunks(query_embedding, match_count=3, match_threshold=0.6)
-        ctx = "\n\n".join(r["content"] for r in chunks)
+        ctx = ""
+        try:
+            query = f"інвестиції {' '.join(goals)}"
+            query_embedding = get_embedding(query)
+            chunks = match_chunks(query_embedding, match_count=3, match_threshold=0.6)
+            ctx = "\n\n".join(r["content"] for r in chunks)
+        except Exception as embed_err:
+            print(f"[WARN] Embedding failed in /suggest: {embed_err}")
 
         provider = get_provider()
         prompt = SUGGESTION_PROMPT.format(
