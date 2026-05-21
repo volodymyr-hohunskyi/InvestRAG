@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import re
-from sentence_transformers import SentenceTransformer
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     Application, CommandHandler, MessageHandler,
@@ -13,10 +12,9 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(__file__))
 from db import match_chunks, get_instruments, get_profile, save_profile
 from llm_provider import get_provider, SYSTEM_PROMPT, SUGGESTION_PROMPT
+from embeddings import get_embedding
 
 load_dotenv()
-
-model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 AMOUNT, HORIZON, GOAL, RISK, EXPERIENCE = range(5)
 
@@ -47,7 +45,7 @@ async def ask(update: Update, context):
     await update.message.reply_text("🔍 Шукаю інформацію...")
 
     try:
-        query_embedding = model.encode(question).tolist()
+        query_embedding = get_embedding(question)
         chunks = match_chunks(query_embedding, match_count=5, match_threshold=0.7)
 
         ctx = "\n\n---\n\n".join(r["content"] for r in chunks)
@@ -107,7 +105,7 @@ async def suggest_cmd(update: Update, context):
 
         goals = json.loads(profile["goals"]) if isinstance(profile["goals"], str) else profile.get("goals", [])
         query = f"інвестиції {' '.join(goals)}"
-        query_embedding = model.encode(query).tolist()
+        query_embedding = get_embedding(query)
         chunks = match_chunks(query_embedding, match_count=3, match_threshold=0.6)
         ctx = "\n\n".join(r["content"] for r in chunks)
 

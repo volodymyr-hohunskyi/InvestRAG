@@ -16,12 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-try:
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-except Exception as e:
-    print(f"Warning: Could not load embedding model: {e}")
-    model = None
+from embeddings import get_embedding
 
 
 class APIHandler(BaseHTTPRequestHandler):
@@ -41,8 +36,7 @@ class APIHandler(BaseHTTPRequestHandler):
             self._respond(200, {
                 "status": "ok",
                 "chunks": chunks_count,
-                "instruments": instruments_count,
-                "model_loaded": model is not None
+                "instruments": instruments_count
             })
         else:
             self._respond(404, {"error": "not found"})
@@ -67,11 +61,7 @@ class APIHandler(BaseHTTPRequestHandler):
             self._respond(400, {"error": "question is required"})
             return
 
-        if not model:
-            self._respond(500, {"error": "embedding model not loaded"})
-            return
-
-        query_embedding = model.encode(question).tolist()
+        query_embedding = get_embedding(question)
         chunks = match_chunks(query_embedding, match_count=5, match_threshold=0.7)
         context = "\n\n---\n\n".join(r["content"] for r in chunks)
 

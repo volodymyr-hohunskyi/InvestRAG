@@ -2,15 +2,13 @@ import subprocess
 import json
 import os
 import sys
-from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from db import insert_chunk, get_existing_source_urls
+from embeddings import get_embedding
 
 load_dotenv()
-
-model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 CHANNEL_URL = "https://www.youtube.com/@UkrInvestClub"
 
@@ -67,7 +65,7 @@ def process_video(video_url):
 
     chunks = chunk_text(transcript)
     for chunk in chunks:
-        embedding = model.encode(chunk).tolist()
+        embedding = get_embedding(chunk)
         insert_chunk(
             content=chunk,
             embedding=embedding,

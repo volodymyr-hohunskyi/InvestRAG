@@ -3,15 +3,13 @@ import sys
 import asyncio
 from telethon import TelegramClient
 from telethon.sessions import StringSession
-from sentence_transformers import SentenceTransformer
 from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from db import insert_chunk, get_existing_source_names
+from embeddings import get_embedding
 
 load_dotenv()
-
-model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 
 GROUPS = [
     {"url": "https://t.me/+Yo0iDJtkB783ZDNi", "name": "EcoTech Invest"},
@@ -58,7 +56,7 @@ async def scrape_group(client, group):
     chunks = chunk_messages(messages)
 
     for chunk in chunks:
-        embedding = model.encode(chunk).tolist()
+        embedding = get_embedding(chunk)
         insert_chunk(
             content=chunk,
             embedding=embedding,
