@@ -63,6 +63,7 @@ async def ask(update: Update, context):
             reply += f"\n\n📚 Джерела: {sources}"
         await update.message.reply_text(reply)
     except Exception as e:
+        print(f"[ERROR /ask] {type(e).__name__}: {e}")
         await update.message.reply_text(
             f"Вибач, сталася помилка при обробці запиту. Спробуй пізніше."
         )
@@ -121,7 +122,8 @@ async def suggest_cmd(update: Update, context):
             user_message=prompt
         )
         await update.message.reply_text(answer)
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR /suggest] {type(e).__name__}: {e}")
         await update.message.reply_text("Помилка при генерації рекомендацій.")
 
 
